@@ -2,199 +2,172 @@ use prettytable::{row, Table};
 use rusqlite::Connection;
 use uuid::Uuid;
 
-use crate::db::models::*;
-use crate::db::*;
+use crate::db::{
+    add_todo, complete_todo, delete_todo, models::Todo, show_all, show_one, update_todo,
+};
 use crate::utils::user_input;
 
-#[derive(Debug)]
-pub enum Action {
-    Add,
-    Show,
-    Help,
-    Delete,
-    Complete,
-}
-
-pub fn add_action(conn: &Connection) {
-    println!("Add: ");
-    let text = "your todo".to_owned();
-    let input = user_input(text);
+/// Add a new todo, either from `--title` or interactive prompt
+pub async fn add_action(conn: &Connection, title_arg: Option<String>) {
+    let title = title_arg.unwrap_or_else(|| {
+        println!("Add:");
+        user_input("todo".to_string()).trim().to_owned()
+    });
 
     let todo = Todo {
         id: Uuid::new_v4().to_string(),
-        title: input.trim().to_owned(),
+        title: title.clone(),
         completed: false,
     };
 
-    let db_result = add_todo(conn, todo.clone());
-
-    match db_result {
-        Ok(_usize) => {
-            // println!("Rows inserted: {:?}", usize);
-            // println!("Todo added!");
-
-            // Create table
-            let mut todos_table = Table::new();
-
-            // Add a row per time
-            todos_table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
-            todos_table.add_row(row![todo.id, todo.title, todo.completed]);
-
-            // Print the table to stdout
-            todos_table.printstd();
+    match add_todo(conn, todo.clone()) {
+        Ok(_) => {
+            let mut table = Table::new();
+            table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
+            table.add_row(row![
+                todo.id,
+                todo.title,
+                todo.completed.then(|| "✅").unwrap_or("❌")
+            ]);
+            table.printstd();
         }
-        Err(err) => {
-            println!("An error occured while inserting database record: {}", err)
-        }
+        Err(e) => eprintln!("Error adding todo: {}", e),
     }
 }
 
-pub fn show_action(conn: &Connection) {
-    println!("Show: ");
-    // println!("___________________________________");
-    let db_results = show_all(conn);
-
-    match db_results {
-        Ok(v) => {
-            // println!("Rows returned: {:?}", v.len());
-            // println!("Todos: {:?}", v);
-
-            if v.len() == 0 {
-                println!("No todos found!");
-                return;
-            };
-
-            // Create the table
-            let mut todos_table = Table::new();
-
-            // Add a row per time
-            todos_table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
-
-            for Todo {
-                id,
-                title,
-                completed,
-            } in v.iter()
-            {
-                todos_table.add_row(row![id, title, completed]);
+/// List all todos
+pub async fn show_action(conn: &Connection) {
+    match show_all(conn) {
+        Ok(todos) if todos.is_empty() => {
+            println!("No todos found!");
+        }
+        Ok(todos) => {
+            let mut table = Table::new();
+            table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
+            for t in todos {
+                table.add_row(row![
+                    t.id,
+                    t.title,
+                    t.completed.then(|| "✅").unwrap_or("❌")
+                ]);
             }
-
-            // Print the table to stdout
-            todos_table.printstd();
+            table.printstd();
         }
-        Err(err) => {
-            println!("An error occured while querying database records: {}", err)
-        }
+        Err(e) => eprintln!("Error fetching todos: {}", e),
     }
 }
 
-pub fn complete_action(conn: &Connection) {
-    println!("Complete: ");
-    let text = "ID".to_owned();
-    let input = user_input(text);
+/// Complete a todo by ID (flag or interactive)
+pub async fn complete_action(conn: &Connection, id_arg: Option<String>) {
+    let id = id_arg.unwrap_or_else(|| {
+        println!("Complete:");
+        user_input("ID".to_string()).trim().to_owned()
+    });
 
-    let id = input.trim().to_owned();
-
-    let db_result_complete = complete_todo(&conn, id.clone());
-
-    match db_result_complete {
-        Ok(_usize) => {
-            // println!("Rows updated: {:?}", usize);
-            // println!("Todo completed!");
-            println!("___________________________________");
-        }
-        Err(err) => {
-            println!("An error occured while updating database record: {}", err)
-        }
+    if let Err(e) = complete_todo(conn, &id) {
+        eprintln!("Error completing todo: {}", e);
+        return;
     }
 
-    let db_result_fetch = show_one(&conn, id.clone());
-
-    match db_result_fetch {
-        Ok(v) => {
-            //println!("Rows returned: {:?}", v.len());
-            // println!("Todos: {:?}", v);
-
-            if v.len() == 0 {
-                println!("No todo found!");
-                return;
-            };
-
-            // Create the table
-            let mut todos_table = Table::new();
-
-            // Add a row per time
-            todos_table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
-
-            for Todo {
-                id,
-                title,
-                completed,
-            } in v.iter()
-            {
-                todos_table.add_row(row![id, title, completed]);
-            }
-
-            // Print the table to stdout
-            todos_table.printstd();
+    match show_one(conn, &id) {
+        Ok(mut v) if !v.is_empty() => {
+            let t = v.remove(0);
+            let mut table = Table::new();
+            table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
+            table.add_row(row![
+                t.id,
+                t.title,
+                t.completed.then(|| "✅").unwrap_or("❌")
+            ]);
+            table.printstd();
         }
-        Err(err) => {
-            println!("An error occured while querying database records: {}", err)
-        }
+        Ok(_) => println!("No todo found with ID: {}", id),
+        Err(e) => eprintln!("Error fetching todo: {}", e),
     }
 }
 
-pub fn delete_action(conn: &Connection) {
-    println!("Delete: ");
-    let text = "ID".to_owned();
-    let input = user_input(text);
+/// Delete a todo by ID (flag or interactive)
+pub async fn delete_action(conn: &Connection, id_arg: Option<String>) {
+    let id = id_arg.unwrap_or_else(|| {
+        println!("Delete:");
+        user_input("ID".to_string()).trim().to_owned()
+    });
 
-    let id = input.trim().to_owned();
-
-    let db_result_fetch = show_one(&conn, id.clone());
-
-    match db_result_fetch {
-        Ok(v) => {
-            // println!("Rows returned: {:?}", v.len());
-            // println!("Todos: {:?}", v);
-
-            if v.len() == 0 {
-                println!("No todo found!");
-                return;
-            };
-
-            // Create the table
-            let mut todos_table = Table::new();
-
-            // Add a row per time
-            todos_table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
-
-            for Todo {
-                id,
-                title,
-                completed,
-            } in v.iter()
-            {
-                todos_table.add_row(row![id, title, completed]);
-            }
-
-            // Print the table to stdout
-            todos_table.printstd();
+    // Show it first
+    if let Ok(mut v) = show_one(conn, &id) {
+        if v.is_empty() {
+            println!("No todo found with ID: {}", id);
+            return;
         }
-        Err(err) => {
-            println!("An error occured while querying database records: {}", err)
+        let t = v.remove(0);
+        let mut table = Table::new();
+        table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
+        table.add_row(row![
+            t.id,
+            t.title,
+            t.completed.then(|| "✅").unwrap_or("❌")
+        ]);
+        table.printstd();
+    }
+
+    if let Err(e) = delete_todo(conn, &id) {
+        eprintln!("Error deleting todo: {}", e);
+    }
+}
+
+/// Update a todo by ID (flag or interactive)
+pub async fn update_action(
+    conn: &Connection,
+    id_arg: Option<String>,
+    title_arg: Option<String>,
+    comp_arg: Option<bool>,
+) {
+    // 1) Determine ID
+    let id = id_arg.unwrap_or_else(|| {
+        println!("Update:");
+        user_input("ID of todo to update".into()).trim().to_owned()
+    });
+
+    // 2) Fetch and show existing
+    match show_one(conn, &id) {
+        Ok(mut v) if !v.is_empty() => {
+            let todo = v.remove(0);
+            let mut tbl = Table::new();
+            tbl.add_row(row![b->"ID", b->"Title", b->"Completed"]);
+            tbl.add_row(row![&todo.id, &todo.title, &todo.completed.then(|| "✅").unwrap_or("❌")]);
+            tbl.printstd();
+        }
+        _ => {
+            eprintln!("❌ No todo found with ID: {}", id);
+            return;
         }
     }
 
-    let db_result_delete = delete_todo(&conn, id.clone());
+    // 3) Determine new title
+    let new_title = title_arg.or_else(|| {
+        let input = user_input("New title (leave blank to skip)".into());
+        let trimmed = input.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_owned())
+        }
+    });
 
-    match db_result_delete {
-        Ok(_usize) => {
-            // println!("Rows deleted: {:?}", usize);
-            // println!("Todo deleted!");
+    // 4) Determine new completed status
+    let new_completed = comp_arg.or_else(|| {
+        let input = user_input("Completed? (y/n, leave blank to skip)".into());
+        match input.trim().to_lowercase().as_str() {
+            "y" | "yes" => Some(true),
+            "n" | "no" => Some(false),
+            _ => None,
         }
-        Err(err) => {
-            println!("An error occured while deleting database record: {}", err)
-        }
+    });
+
+    // 5) Apply update
+    match update_todo(conn, &id, new_title.as_deref(), new_completed) {
+        Ok(0) => println!("No fields changed."),
+        Ok(_) => println!("✅ Todo updated."),
+        Err(e) => eprintln!("Error updating todo: {}", e),
     }
 }
