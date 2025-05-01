@@ -1,12 +1,22 @@
-# Todo CLI Application
+# `todoctl` 
+CLI Application for managing tasks in the terminal
+
+## Installation
+
+```sh
+cargo install --git https://github.com/MikeTeddyOmondi/todoctl
+```
 
 ## Preview
 
-Adding a todo
-![ADD_SCREENSHOT](./img/todo-rust-cli-app[ADD_SCREENSHOT].PNG)
+### Displaying the help menu
 
-Displaying the help menu
-![HELP_MENU_SCREENSHOT](./img/todo-rust-cli-app[HELP_MENU_SCREENSHOT].PNG)
+![HELP_MENU_SCREENSHOT](./img/todoctl-help-cmd.png)
 
-Showing all todos
-![SHOW_SCREENSHOT](./img/todo-rust-cli-app[SHOW_SCREENSHOT].PNG)
+### Adding a todo
+
+![ADD_SCREENSHOT](./img/todoctl-add-cmd.png)
+
+### Showing all todos
+
+![SHOW_SCREENSHOT](./img/todoctl-show-cmd.png)
