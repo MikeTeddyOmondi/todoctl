@@ -1,5 +1,5 @@
 # `todoctl` 
-CLI Application for managing tasks in the terminal
+Command line interface application for managing tasks in your terminal.
 
 ## Installation
 
@@ -20,3 +20,7 @@ cargo install --git https://github.com/MikeTeddyOmondi/todoctl
 ### Showing all todos
 
 ![SHOW_SCREENSHOT](./img/todoctl-show-cmd.png)
+
+## License
+
+Licensed under [MIT](./LICENSE.md)
