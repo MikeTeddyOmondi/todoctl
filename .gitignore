@@ -1,3 +1,4 @@
 /target
 
-todos.db
+**/*.db
+.todos.db
