@@ -1,4 +1,4 @@
-use rusqlite::{Connection, Error, Result};
+use rusqlite::{named_params, Connection, Error, Result};
 
 pub mod models {
     #[derive(Debug, Clone)]
@@ -9,82 +9,106 @@ pub mod models {
     }
 }
 
-pub fn add_todo(conn: &Connection, todo: models::Todo) -> Result<usize, Error> {
-    // println!("Todo: {:?}", todo);
-    let result = conn.execute(
-        "INSERT INTO todos (id, title, completed) values (?1, ?2, ?3)",
-        [todo.id, todo.title, (todo.completed as i32).to_string()],
-    )?;
-    Ok(result)
-}
-
-pub fn complete_todo(conn: &Connection, id: String) -> Result<usize, Error> {
-    let result = conn.execute("UPDATE todos set completed = 1 WHERE (id) = (?1);", [id])?;
-    Ok(result)
-}
-
-pub fn delete_todo(conn: &Connection, id: String) -> Result<usize, Error> {
-    let result = conn.execute("DELETE FROM todos WHERE (id) = (?1);", [id])?;
-    Ok(result)
-}
-
-pub fn show_all(conn: &Connection) -> Result<Vec<models::Todo>, Error> {
-    let mut stmt = conn.prepare("SELECT * from todos;")?;
-
-    let todos = stmt.query_map((), |row| {
-        Ok(models::Todo {
-            id: row.get(0)?,
-            title: row.get(1)?,
-            completed: row.get(2)?,
-        })
-    })?;
-
-    let mut todos_array = Vec::new();
-
-    for todo in todos {
-        match todo {
-            Ok(todo) => todos_array.push(todo),
-            Err(err) => println!("Error occurred: {:?}", err),
-        }
-    }
-
-    Ok(todos_array)
-}
-
-pub fn show_one(conn: &Connection, id: String) -> Result<Vec<models::Todo>, Error> {
-    let mut stmt = conn.prepare("SELECT * from todos WHERE (id) = :id;")?;
-
-    let todos = stmt.query_map(&[(":id", &id)], |row| {
-        Ok(models::Todo {
-            id: row.get(0)?,
-            title: row.get(1)?,
-            completed: row.get(2)?,
-        })
-    })?;
-
-    let mut todos_array = Vec::new();
-
-    for todo in todos {
-        match todo {
-            Ok(todo) => todos_array.push(todo),
-            Err(err) => println!("Error occurred: {:?}", err),
-        }
-    }
-
-    Ok(todos_array)
-}
+use models::Todo;
 
 pub fn init() -> Result<Connection, Error> {
-    let conn = Connection::open("./todos.db")?;
-
+    let conn = Connection::open("./.todos.db")?;
     conn.execute(
-        "create table if not exists todos (
-             id text primary key,
-             title text not null,
-             completed boolean not null 
-        )",
+        r#"
+        CREATE TABLE IF NOT EXISTS todos (
+            id        TEXT PRIMARY KEY,
+            title     TEXT NOT NULL,
+            completed BOOLEAN NOT NULL
+        )
+        "#,
         (),
     )?;
-
     Ok(conn)
+}
+
+pub fn add_todo(conn: &Connection, todo: Todo) -> Result<usize, Error> {
+    conn.execute(
+        "INSERT INTO todos (id, title, completed) VALUES (?1, ?2, ?3)",
+        &[&todo.id, &todo.title, &(todo.completed as i32).to_string()],
+    )
+}
+
+pub fn complete_todo(conn: &Connection, id: &str) -> Result<usize, Error> {
+    conn.execute("UPDATE todos SET completed = 1 WHERE id = ?1", &[&id])
+}
+
+pub fn delete_todo(conn: &Connection, id: &str) -> Result<usize, Error> {
+    conn.execute("DELETE FROM todos WHERE id = ?1", &[&id])
+}
+
+pub fn show_all(conn: &Connection) -> Result<Vec<Todo>, Error> {
+    let mut stmt = conn.prepare("SELECT id, title, completed FROM todos")?;
+    let rows = stmt.query_map([], |row| {
+        Ok(Todo {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            completed: row.get::<_, i32>(2)? != 0,
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn show_one(conn: &Connection, id: &str) -> Result<Vec<Todo>, Error> {
+    let mut stmt = conn.prepare("SELECT id, title, completed FROM todos WHERE id = ?1")?;
+    let rows = stmt.query_map([id], |row| {
+        Ok(Todo {
+            id: row.get(0)?,
+            title: row.get(1)?,
+            completed: row.get::<_, i32>(2)? != 0,
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn update_todo(
+    conn: &Connection,
+    id: &str,
+    new_title: Option<&str>,
+    new_completed: Option<bool>,
+) -> Result<usize, Error> {
+    // Build dynamic SQL with named parameters
+    let mut parts = Vec::new();
+
+    if new_title.is_some() {
+        parts.push("title = :title");
+    }
+
+    if new_completed.is_some() {
+        parts.push("completed = :completed");
+    }
+
+    if parts.is_empty() {
+        return Ok(0);
+    }
+
+    let sql = format!("UPDATE todos SET {} WHERE id = :id", parts.join(", "));
+
+    // Create the statement
+    let mut stmt = conn.prepare(&sql)?;
+
+    // Convert bool to i32 for SQLite compatibility if needed
+    let completed_int = new_completed.map(|c| if c { 1 } else { 0 });
+
+    // Execute with different named parameters depending on what was provided
+    match (new_title, completed_int) {
+        (Some(title), Some(completed)) => stmt.execute(named_params! {
+            ":title": title,
+            ":completed": completed,
+            ":id": id,
+        }),
+        (Some(title), None) => stmt.execute(named_params! {
+            ":title": title,
+            ":id": id,
+        }),
+        (None, Some(completed)) => stmt.execute(named_params! {
+            ":completed": completed,
+            ":id": id,
+        }),
+        _ => Ok(0), // Should never reach here due to the empty check above
+    }
 }
