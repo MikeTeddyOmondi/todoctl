@@ -1,27 +1,25 @@
 use std::io::{self, Write};
 
-pub fn user_input(text: String) -> String {
-    println!("___________________________________");
-    let mut input_buffer = String::new();
-    print!("Enter {}: ", text);
-    let _ = io::stdout().flush(); // glues the previous print! statements to the stdin
-    let _bytes_read = io::stdin().read_line(&mut input_buffer).unwrap();
-    // println!("***********************************");
-    // println!("Todo: {}", line.trim());
-    // println!("No. of bytes read: {}", bytes_read);
-    println!("___________________________________");
-    input_buffer
-}
+/// Prompt the user and read a line
+pub fn user_input(prompt: String) -> String {
+    loop {
+        println!("___________________________________");
+        print!("Enter {}: ", prompt);
+        let _ = io::stdout().flush();
 
-pub fn print_help() {
-    println!();
-    println!("Usage: bin [ACTION]");
-    println!();
-    println!("ACTIONS:");
-    println!("  help        Show help menu");
-    println!("  add         Add todos");
-    println!("  show        Show todos");
-    println!("  complete    Complete a todo");
-    println!("  delete      Delete a todo");
-    println!();
+        let mut buf = String::new();
+        if io::stdin().read_line(&mut buf).is_err() {
+            eprintln!("Failed to read input; try again.");
+            continue;
+        }
+
+        let val = buf.trim_end(); // keep leading/trailing whitespace if you want, but not newline
+        if val.is_empty() {
+            println!("⚠️  Input cannot be empty. Please try again.");
+            continue;
+        }
+
+        println!("___________________________________");
+        return val.to_string();
+    }
 }
