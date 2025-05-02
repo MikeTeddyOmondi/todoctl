@@ -34,11 +34,11 @@ pub fn add_todo(conn: &Connection, todo: Todo) -> Result<usize, Error> {
 }
 
 pub fn complete_todo(conn: &Connection, id: &str) -> Result<usize, Error> {
-    conn.execute("UPDATE todos SET completed = 1 WHERE id = ?1", &[&id])
+    conn.execute("UPDATE todos SET completed = 1 WHERE id = ?1", [&id])
 }
 
 pub fn delete_todo(conn: &Connection, id: &str) -> Result<usize, Error> {
-    conn.execute("DELETE FROM todos WHERE id = ?1", &[&id])
+    conn.execute("DELETE FROM todos WHERE id = ?1", [&id])
 }
 
 pub fn show_all(conn: &Connection) -> Result<Vec<Todo>, Error> {
