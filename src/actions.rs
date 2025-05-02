@@ -27,7 +27,7 @@ pub async fn add_action(conn: &Connection, title_arg: Option<String>) {
             table.add_row(row![
                 todo.id,
                 todo.title,
-                todo.completed.then(|| "✅").unwrap_or("❌")
+                todo.completed.then_some("✅").unwrap_or("❌")
             ]);
             table.printstd();
         }
@@ -48,7 +48,7 @@ pub async fn show_action(conn: &Connection) {
                 table.add_row(row![
                     t.id,
                     t.title,
-                    t.completed.then(|| "✅").unwrap_or("❌")
+                    t.completed.then_some("✅").unwrap_or("❌")
                 ]);
             }
             table.printstd();
@@ -77,7 +77,7 @@ pub async fn complete_action(conn: &Connection, id_arg: Option<String>) {
             table.add_row(row![
                 t.id,
                 t.title,
-                t.completed.then(|| "✅").unwrap_or("❌")
+                t.completed.then_some("✅").unwrap_or("❌")
             ]);
             table.printstd();
         }
@@ -105,7 +105,7 @@ pub async fn delete_action(conn: &Connection, id_arg: Option<String>) {
         table.add_row(row![
             t.id,
             t.title,
-            t.completed.then(|| "✅").unwrap_or("❌")
+            t.completed.then_some("✅").unwrap_or("❌")
         ]);
         table.printstd();
     }
@@ -134,7 +134,7 @@ pub async fn update_action(
             let todo = v.remove(0);
             let mut tbl = Table::new();
             tbl.add_row(row![b->"ID", b->"Title", b->"Completed"]);
-            tbl.add_row(row![&todo.id, &todo.title, &todo.completed.then(|| "✅").unwrap_or("❌")]);
+            tbl.add_row(row![&todo.id, &todo.title, &todo.completed.then_some("✅").unwrap_or("❌")]);
             tbl.printstd();
         }
         _ => {
