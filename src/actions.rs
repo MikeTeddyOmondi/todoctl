@@ -45,11 +45,7 @@ pub async fn show_action(conn: &Connection) {
             let mut table = Table::new();
             table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
             for t in todos {
-                table.add_row(row![
-                    t.id,
-                    t.title,
-                    if t.completed { "✅" } else { "❌" }
-                ]);
+                table.add_row(row![t.id, t.title, if t.completed { "✅" } else { "❌" }]);
             }
             table.printstd();
         }
@@ -74,11 +70,7 @@ pub async fn complete_action(conn: &Connection, id_arg: Option<String>) {
             let t = v.remove(0);
             let mut table = Table::new();
             table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
-            table.add_row(row![
-                t.id,
-                t.title,
-                if t.completed { "✅" } else { "❌" }
-            ]);
+            table.add_row(row![t.id, t.title, if t.completed { "✅" } else { "❌" }]);
             table.printstd();
         }
         Ok(_) => println!("No todo found with ID: {}", id),
@@ -102,11 +94,7 @@ pub async fn delete_action(conn: &Connection, id_arg: Option<String>) {
         let t = v.remove(0);
         let mut table = Table::new();
         table.add_row(row![b->"ID", b->"Title", b->"Completed"]);
-        table.add_row(row![
-            t.id,
-            t.title,
-            if t.completed { "✅" } else { "❌" }
-        ]);
+        table.add_row(row![t.id, t.title, if t.completed { "✅" } else { "❌" }]);
         table.printstd();
     }
 
