@@ -134,7 +134,11 @@ pub async fn update_action(
             let todo = v.remove(0);
             let mut tbl = Table::new();
             tbl.add_row(row![b->"ID", b->"Title", b->"Completed"]);
-            tbl.add_row(row![&todo.id, &todo.title, &todo.completed.then_some("✅").unwrap_or("❌")]);
+            tbl.add_row(row![
+                &todo.id,
+                &todo.title,
+                &todo.completed.then_some("✅").unwrap_or("❌")
+            ]);
             tbl.printstd();
         }
         _ => {
