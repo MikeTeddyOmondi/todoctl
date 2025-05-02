@@ -27,7 +27,7 @@ pub async fn add_action(conn: &Connection, title_arg: Option<String>) {
             table.add_row(row![
                 todo.id,
                 todo.title,
-                todo.completed.then_some("✅").unwrap_or("❌")
+                if todo.completed { "✅" } else { "❌" }
             ]);
             table.printstd();
         }
@@ -48,7 +48,7 @@ pub async fn show_action(conn: &Connection) {
                 table.add_row(row![
                     t.id,
                     t.title,
-                    t.completed.then_some("✅").unwrap_or("❌")
+                    if t.completed { "✅" } else { "❌" }
                 ]);
             }
             table.printstd();
@@ -77,7 +77,7 @@ pub async fn complete_action(conn: &Connection, id_arg: Option<String>) {
             table.add_row(row![
                 t.id,
                 t.title,
-                t.completed.then_some("✅").unwrap_or("❌")
+                if t.completed { "✅" } else { "❌" }
             ]);
             table.printstd();
         }
@@ -105,7 +105,7 @@ pub async fn delete_action(conn: &Connection, id_arg: Option<String>) {
         table.add_row(row![
             t.id,
             t.title,
-            t.completed.then_some("✅").unwrap_or("❌")
+            if t.completed { "✅" } else { "❌" }
         ]);
         table.printstd();
     }
@@ -137,7 +137,7 @@ pub async fn update_action(
             tbl.add_row(row![
                 &todo.id,
                 &todo.title,
-                &todo.completed.then_some("✅").unwrap_or("❌")
+                if todo.completed { "✅" } else { "❌" }
             ]);
             tbl.printstd();
         }

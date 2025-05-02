@@ -29,7 +29,7 @@ pub fn init() -> Result<Connection, Error> {
 pub fn add_todo(conn: &Connection, todo: Todo) -> Result<usize, Error> {
     conn.execute(
         "INSERT INTO todos (id, title, completed) VALUES (?1, ?2, ?3)",
-        &[&todo.id, &todo.title, &(todo.completed as i32).to_string()],
+        [&todo.id, &todo.title, &(todo.completed as i32).to_string()],
     )
 }
 
