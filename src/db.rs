@@ -1,4 +1,6 @@
 use rusqlite::{named_params, Connection, Error, Result};
+use std::fs;
+use std::path::PathBuf;
 
 pub mod models {
     #[derive(Debug, Clone)]
@@ -12,7 +14,13 @@ pub mod models {
 use models::Todo;
 
 pub fn init() -> Result<Connection, Error> {
-    let conn = Connection::open("./.todos.db")?;
+    let storage_dir = get_or_create_app_dir("todoctl/storage/")
+        .expect("Failed to create app dir")
+        .to_string_lossy()
+        .to_string();
+
+    let db_path = format!("{storage_dir}/.todos.db");
+    let conn = Connection::open(db_path)?;
     conn.execute(
         r#"
         CREATE TABLE IF NOT EXISTS todos (
@@ -24,6 +32,19 @@ pub fn init() -> Result<Connection, Error> {
         (),
     )?;
     Ok(conn)
+}
+
+fn get_or_create_app_dir(
+    dir_name: &str,
+) -> std::result::Result<PathBuf, Box<dyn std::error::Error>> {
+    let app_dir = dirs::data_local_dir()
+        .map(|pb| pb.join(dir_name))
+        .ok_or("Could not determine local data directory")?;
+
+    // Create directory if it doesn't exist
+    fs::create_dir_all(&app_dir).expect("Failed to create data directory");
+
+    Ok(app_dir)
 }
 
 pub fn add_todo(conn: &Connection, todo: Todo) -> Result<usize, Error> {
