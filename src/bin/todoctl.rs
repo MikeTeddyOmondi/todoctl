@@ -54,7 +54,7 @@ async fn main() {
     let conn: Connection = match db::init() {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Error initializing database: {}", e);
+            eprintln!("Error initializing database: {e}");
             std::process::exit(1);
         }
     };

@@ -31,7 +31,7 @@ pub async fn add_action(conn: &Connection, title_arg: Option<String>) {
             ]);
             table.printstd();
         }
-        Err(e) => eprintln!("Error adding todo: {}", e),
+        Err(e) => eprintln!("Error adding todo: {e}"),
     }
 }
 
@@ -49,7 +49,7 @@ pub async fn show_action(conn: &Connection) {
             }
             table.printstd();
         }
-        Err(e) => eprintln!("Error fetching todos: {}", e),
+        Err(e) => eprintln!("Error fetching todos: {e}"),
     }
 }
 
@@ -61,7 +61,7 @@ pub async fn complete_action(conn: &Connection, id_arg: Option<String>) {
     });
 
     if let Err(e) = complete_todo(conn, &id) {
-        eprintln!("Error completing todo: {}", e);
+        eprintln!("Error completing todo: {e}");
         return;
     }
 
@@ -73,8 +73,8 @@ pub async fn complete_action(conn: &Connection, id_arg: Option<String>) {
             table.add_row(row![t.id, t.title, if t.completed { "✅" } else { "❌" }]);
             table.printstd();
         }
-        Ok(_) => println!("No todo found with ID: {}", id),
-        Err(e) => eprintln!("Error fetching todo: {}", e),
+        Ok(_) => println!("No todo found with ID: {id}"),
+        Err(e) => eprintln!("Error fetching todo: {e}"),
     }
 }
 
@@ -88,7 +88,7 @@ pub async fn delete_action(conn: &Connection, id_arg: Option<String>) {
     // Show it first
     if let Ok(mut v) = show_one(conn, &id) {
         if v.is_empty() {
-            println!("No todo found with ID: {}", id);
+            println!("No todo found with ID: {id}");
             return;
         }
         let t = v.remove(0);
@@ -99,7 +99,7 @@ pub async fn delete_action(conn: &Connection, id_arg: Option<String>) {
     }
 
     if let Err(e) = delete_todo(conn, &id) {
-        eprintln!("Error deleting todo: {}", e);
+        eprintln!("Error deleting todo: {e}");
     }
 }
 
@@ -130,7 +130,7 @@ pub async fn update_action(
             tbl.printstd();
         }
         _ => {
-            eprintln!("❌ No todo found with ID: {}", id);
+            eprintln!("❌ No todo found with ID: {id}");
             return;
         }
     }
@@ -160,6 +160,6 @@ pub async fn update_action(
     match update_todo(conn, &id, new_title.as_deref(), new_completed) {
         Ok(0) => println!("No fields changed."),
         Ok(_) => println!("✅ Todo updated."),
-        Err(e) => eprintln!("Error updating todo: {}", e),
+        Err(e) => eprintln!("Error updating todo: {e}"),
     }
 }
