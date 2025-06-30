@@ -4,7 +4,7 @@ use std::io::{self, Write};
 pub fn user_input(prompt: String) -> String {
     loop {
         println!("___________________________________");
-        print!("Enter {}: ", prompt);
+        print!("Enter {prompt}: ");
         let _ = io::stdout().flush();
 
         let mut buf = String::new();
